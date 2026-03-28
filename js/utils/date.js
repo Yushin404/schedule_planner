@@ -7,6 +7,15 @@ export function getCurrentMonthValue() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
 }
 
+export function getMonthInfo(monthValue) {
+  const [year, month] = monthValue.split("-").map(Number);
+  return {
+    year,
+    month,
+    lastDay: new Date(year, month, 0).getDate()
+  };
+}
+
 export function buildDateKey(monthValue, day) {
   return `${monthValue}-${pad(day)}`;
 }
@@ -24,10 +33,4 @@ export function getWeekdayClass(index) {
   if (index === 0) return "weekend-sun";
   if (index === 6) return "weekend-sat";
   return "";
-}
-
-export function getMonthInfo(monthValue) {
-  const [year, month] = monthValue.split("-").map(Number);
-  const lastDay = new Date(year, month, 0).getDate();
-  return { year, month, lastDay };
 }
