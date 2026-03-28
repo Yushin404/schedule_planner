@@ -1,64 +1,58 @@
+import { fetchSharedSchedule } from "./api/sharedRepo.js";
 import { getCurrentMonthValue } from "./utils/date.js";
-import { loadState, saveState } from "./data/storage.js";
-import { buildMonthRows, updateEntry } from "./data/schedule.js";
-import { filterRows, renderTable } from "./ui/table.js";
+import { downloadJson } from "./utils/dom.js";
+import { buildRows, createTemplate } from "./data/normalize.js";
+import { filterRows, renderTable, renderMobileList } from "./ui/table.js";
 import { renderStats } from "./ui/stats.js";
 
 const monthPicker = document.getElementById("monthPicker");
-const generateBtn = document.getElementById("generateBtn");
-const todayBtn = document.getElementById("todayBtn");
 const filterSelect = document.getElementById("filterSelect");
-const exportBtn = document.getElementById("exportBtn");
-const importInput = document.getElementById("importInput");
+const reloadBtn = document.getElementById("reloadBtn");
+const todayBtn = document.getElementById("todayBtn");
+const downloadTemplateBtn = document.getElementById("downloadTemplateBtn");
+const downloadCurrentBtn = document.getElementById("downloadCurrentBtn");
 const tbody = document.getElementById("tbody");
+const mobileList = document.getElementById("mobileList");
 const stats = document.getElementById("stats");
+const titleMonth = document.getElementById("titleMonth");
+const menuToggle = document.getElementById("menuToggle");
+const sidebar = document.getElementById("sidebar");
 
-let state = loadState();
+let sharedData = { updatedAt: null, months: {} };
 
-function bindRowInputs() {
-  document.querySelectorAll("[data-key][data-field]").forEach((element) => {
-    const handler = (event) => {
-      const key = event.target.dataset.key;
-      const field = event.target.dataset.field;
-      updateEntry(state, monthPicker.value, key, field, event.target.value);
-      saveState(state);
-      render();
-    };
+function formatMonthTitle(monthValue) {
+  const [year, month] = monthValue.split("-");
+  return `${year}年${Number(month)}月の予定`;
+}
 
-    element.addEventListener("change", handler);
-    element.addEventListener("input", handler);
-  });
+function getCurrentRows() {
+  const rows = buildRows(sharedData, monthPicker.value);
+  return filterRows(rows, filterSelect.value);
 }
 
 function render() {
-  const rows = buildMonthRows(state, monthPicker.value);
-  const filteredRows = filterRows(rows, filterSelect.value);
+  const allRows = buildRows(sharedData, monthPicker.value);
+  const rows = filterRows(allRows, filterSelect.value);
 
-  renderTable(tbody, filteredRows);
-  renderStats(stats, rows);
-  bindRowInputs();
+  titleMonth.textContent = formatMonthTitle(monthPicker.value);
+  renderStats(stats, allRows);
+  renderTable(tbody, rows);
+  renderMobileList(mobileList, rows);
 }
 
-function exportJson() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], {
-    type: "application/json"
-  });
+async function loadSharedData() {
+  reloadBtn.disabled = true;
+  reloadBtn.textContent = "読み込み中...";
 
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "pickup-schedule-data.json";
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
-async function importJson(file) {
-  if (!file) return;
-
-  const text = await file.text();
-  state = JSON.parse(text);
-  saveState(state);
-  render();
-  alert("読み込みが完了しました。");
+  try {
+    sharedData = await fetchSharedSchedule();
+    render();
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    reloadBtn.disabled = false;
+    reloadBtn.textContent = "共有データを再読み込み";
+  }
 }
 
 function moveToToday() {
@@ -66,7 +60,7 @@ function moveToToday() {
   render();
 
   setTimeout(() => {
-    const todayRow = document.querySelector("tr.today");
+    const todayRow = document.querySelector(".mobile-item.today, tr.today");
     if (todayRow) {
       todayRow.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -74,27 +68,28 @@ function moveToToday() {
 }
 
 function setupEvents() {
-  generateBtn.addEventListener("click", render);
+  reloadBtn.addEventListener("click", loadSharedData);
+  todayBtn.addEventListener("click", moveToToday);
   monthPicker.addEventListener("change", render);
   filterSelect.addEventListener("change", render);
-  todayBtn.addEventListener("click", moveToToday);
-  exportBtn.addEventListener("click", exportJson);
 
-  importInput.addEventListener("change", async (event) => {
-    try {
-      await importJson(event.target.files[0]);
-    } catch {
-      alert("JSONの読み込みに失敗しました。");
-    } finally {
-      event.target.value = "";
-    }
+  downloadTemplateBtn.addEventListener("click", () => {
+    downloadJson("shared-schedule-template.json", createTemplate(monthPicker.value));
+  });
+
+  downloadCurrentBtn.addEventListener("click", () => {
+    downloadJson("shared-schedule.json", sharedData);
+  });
+
+  menuToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("open");
   });
 }
 
-function init() {
+async function init() {
   monthPicker.value = getCurrentMonthValue();
   setupEvents();
-  render();
+  await loadSharedData();
 }
 
 init();

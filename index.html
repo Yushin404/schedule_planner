@@ -2,43 +2,82 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>送迎スケジュール管理</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>共有送迎スケジュール</title>
+  <meta name="theme-color" content="#2563eb" />
   <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body>
-  <div class="wrap">
-    <section class="hero">
-      <div class="card">
-        <h1>送迎スケジュール管理</h1>
-        <p class="sub">
-          月ごとの予定・実績・送迎時刻・補足を見やすく管理するためのシンプルなWebアプリです。
-        </p>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge">送</div>
+      <div>
+        <h1>共有送迎スケジュール</h1>
+        <p>GitHub Pagesで公開できるスマホ対応版</p>
       </div>
-      <div class="card stats" id="stats"></div>
-    </section>
+    </div>
+    <button id="menuToggle" class="menu-toggle" aria-label="メニューを開く">☰</button>
+  </header>
 
-    <div class="layout">
-      <main class="card">
-        <div class="toolbar">
-          <div class="left-tools">
-            <input type="month" id="monthPicker" />
-            <button id="generateBtn" class="primary">月を作成</button>
-            <button id="todayBtn">今日へ移動</button>
-          </div>
-          <div class="right-tools">
-            <select id="filterSelect">
-              <option value="all">すべて表示</option>
-              <option value="plan">予定ありのみ</option>
-              <option value="pickup">送迎時刻ありのみ</option>
-              <option value="done">実績ありのみ</option>
-            </select>
-            <button id="exportBtn">JSON書き出し</button>
-            <label class="ghost" for="importInput">JSON読み込み</label>
-            <input id="importInput" type="file" accept="application/json" hidden />
-          </div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <section class="panel">
+        <h2>表示設定</h2>
+        <div class="field">
+          <label for="monthPicker">月</label>
+          <input type="month" id="monthPicker" />
         </div>
+        <div class="field">
+          <label for="filterSelect">絞り込み</label>
+          <select id="filterSelect">
+            <option value="all">すべて表示</option>
+            <option value="plan">予定ありのみ</option>
+            <option value="pickup">送迎時刻ありのみ</option>
+            <option value="done">実績ありのみ</option>
+          </select>
+        </div>
+        <div class="button-stack">
+          <button id="reloadBtn" class="primary">共有データを再読み込み</button>
+          <button id="todayBtn">今日へ移動</button>
+        </div>
+      </section>
 
+      <section class="panel">
+        <h2>共有の考え方</h2>
+        <p class="muted">
+          この版は <code>data/shared-schedule.json</code> を全員で読む作りです。
+          GitHub上のJSONを更新すると、URLにアクセスした全員に同じ内容が表示されます。
+        </p>
+        <p class="muted">
+          ただし、GitHub Pages単体ではブラウザから直接GitHubへ安全に書き込めません。
+          そのためこの版は <strong>共有閲覧 + 管理者がJSONを更新</strong> 方式です。
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>管理者用</h2>
+        <div class="button-stack">
+          <button id="downloadTemplateBtn">JSONテンプレート保存</button>
+          <button id="downloadCurrentBtn">現在表示中をJSON保存</button>
+        </div>
+        <p class="muted small">
+          ダウンロードしたJSONを GitHub の <code>data/shared-schedule.json</code> に上書きすると共有内容を更新できます。
+        </p>
+      </section>
+    </aside>
+
+    <main class="main-content">
+      <section class="hero-grid">
+        <div class="hero-card">
+          <h2 id="titleMonth">今月の予定</h2>
+          <p class="muted">
+            予定・実績・送迎時刻・補足を1画面で確認できます。スマホではカード表示、PCでは表表示になります。
+          </p>
+        </div>
+        <div class="stats-card" id="stats"></div>
+      </section>
+
+      <section class="table-card desktop-only">
         <div class="table-shell">
           <table>
             <thead>
@@ -54,23 +93,10 @@
             <tbody id="tbody"></tbody>
           </table>
         </div>
-        <div class="footer">保存先: このブラウザ内（localStorage）</div>
-      </main>
+      </section>
 
-      <aside class="card side">
-        <h3>この構成のポイント</h3>
-        <div class="legend">
-          <div class="legend-item"><span class="dot today"></span> 今日の行を自動で強調</div>
-          <div class="legend-item"><span class="dot plan"></span> 予定ありの日が分かりやすい</div>
-          <div class="legend-item"><span class="dot done"></span> 実績入力済みの日を区別</div>
-        </div>
-
-        <div class="hint">
-          GitHubに置きやすいように、HTML / CSS / JS を分割しています。<br />
-          必要なら次に、スマホ用UIやカレンダー表示版に拡張できます。
-        </div>
-      </aside>
-    </div>
+      <section class="mobile-list mobile-only" id="mobileList"></section>
+    </main>
   </div>
 
   <script type="module" src="./js/main.js"></script>
